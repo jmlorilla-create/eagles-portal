@@ -1,12 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Negros Island Eagles Region Members' Portal</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script type="module">
-        // const firebaseConfig = {
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Negros Island Eagles Region Members' Portal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background:#f8f9fa; }
+    .card { max-width:420px; margin:auto; }
+    #photoPreview { max-height:180px; margin-top:8px; }
+  </style>
+</head>
+<body>
+  <!-- ========= LOGIN PAGE ========= -->
+  <div id="loginPage" class="container mt-5">
+    <h1 class="text-center mb-4">Negros Island Eagles Region<br>Members' Portal</h1>
+    <div class="card p-4 shadow">
+      <div class="mb-3">
+        <label class="form-label">Email (used for login)</label>
+        <input id="email" type="email" class="form-control" placeholder="you@gmail.com" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Password</label>
+        <input id="password" type="password" class="form-control" placeholder="min 6 chars" required>
+      </div>
+      <div class="d-grid gap-2">
+        <button onclick="register()" class="btn btn-primary">Register</button>
+        <button onclick="login()" class="btn btn-success">Log In</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========= PROFILE PAGE ========= -->
+  <div id="profilePage" class="container mt-4" style="display:none;">
+    <h2 class="mb-4">Member Profile</h2>
+    <form id="profileForm" class="row g-3"></form>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    // ==== 1. PASTE YOUR FIREBASE CONFIG HERE ====
+    const firebaseConfig = {
   apiKey: "AIzaSyAM-xOBR_Ps4LtQEfQRKRQnvCUURbt2LBE",
   authDomain: "fir-eagles-portal.firebaseapp.com",
   projectId: "fir-eagles-portal",
@@ -14,429 +48,296 @@
   messagingSenderId: "15092804787",
   appId: "1:15092804787:web:a70575aff4f9bc091c14c6"
 };
+    // ============================================
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, collection, addDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-        import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+    import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+    import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js';
 
-        const firebaseConfig = YOUR_FIREBASE_CONFIG_HERE;  // Paste your config here, e.g., { apiKey: "AIza...", ... }
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
 
-        // Data lists from PSA
-        const regions = ['Western Visayas', 'Central Visayas'];
-        const provinces = {
-            'Western Visayas': {
-                'Aklan': ['Altavas', 'Balete', 'Banga', 'Buruanga', 'Ibajay', 'Kalibo', 'Lezo', 'Madalag', 'Makato', 'Malay', 'Malinao', 'Nabas', 'New Washington', 'Numancia', 'Tangalan'],
-                'Antique': ['Anini-y', 'Barbaza', 'Belison', 'Bugtong Bato', 'Caluya', 'Culasi', 'Hamtic', 'Laua-an', 'Libertad', 'Pandan', 'Patnongon', 'San Remigio', 'Sebaste', 'Sibalom', 'Tobias Fornier', 'Valderrama'],
-                'Capiz': ['City of Roxas', 'Cuartero', 'Dao', 'Dumarao', 'Dumalag', 'Ivisan', 'Jamindan', 'Ma-ayon', 'Mambusao', 'Panay', 'Pilar', 'Pontevedra', 'Pres. Roxas', 'Sapian', 'Sigma'],
-                'Guimaras': ['Buenavista', 'Jordan', 'Nueva Valencia', 'San Lorenzo', 'Sibunag'],
-                'Iloilo': ['Ajuy', 'Alimodian', 'Anilao', 'Badiangan', 'Balasan', 'Banate', 'Barotac Nuevo', 'Barotac Viejo', 'Batad', 'Bingawan', 'Cabatuan', 'Calinog', 'Carles', 'Concepcion', 'Dingle', 'Duenas', 'Dumangas', 'Estancia', 'Guimbal', 'Igbaras', 'Janiuay', 'Lambunao', 'Leganes', 'Lemery', 'Leon', 'Maasin', 'Miagao', 'Mina', 'New Lucena', 'Oton', 'Pavia', 'Pototan', 'San Dionisio', 'San Enrique', 'San Joaquin', 'San Miguel', 'San Rafael', 'Santa Barbara', 'Sara', 'Tigbauan', 'Tubungan', 'Zarraga'],
-                'Negros Occidental': ['Bacolod', 'Bago', 'Cadiz', 'Escalante', 'Himamaylan', 'Kabankalan', 'La Carlota', 'Sagay', 'San Carlos', 'Silay', 'Sipalay', 'Talisay', 'Victorias', 'Binalbagan', 'Calatrava', 'Candoni', 'Cauayan', 'Don Salvador Benedicto', 'Enrique B. Magalona', 'Hinigaran', 'Hinoba-an', 'Ilog', 'Isabela', 'La Castellana', 'Manapla', 'Moises Padilla', 'Murcia', 'Pontevedra', 'Pulupandan', 'San Enrique', 'Toboso', 'Valladolid']
-            },
-            'Central Visayas': {
-                'Bohol': ['Alicia', 'Anda', 'Antequera', 'Baclayon', 'Balilihan', 'Batuan', 'Bilar', 'Buenavista', 'Calape', 'Candijay', 'Carmen', 'Catigbian', 'Clarin', 'Corella', 'Cortes', 'Dauis', 'Dimiao', 'Duero', 'Garcia Hernandez', 'Guindulman', 'Inabanga', 'Jagna', 'Lila', 'Loay', 'Loboc', 'Loon', 'Mabini', 'Maribojoc', 'Panglao', 'Pilar', 'President Carlos P. Garcia', 'Sagbayan', 'San Isidro', 'Sebmo', 'Sierra Bullones', 'Sikatuna', 'Tagbilaran City', 'Talibon', 'Trinidad', 'Ubay', 'Valencia'],
-                'Cebu': ['Alcantara', 'Alcoy', 'Alegria', 'Amlan', 'Badian', 'Balamban', 'Bantayan', 'Barili', 'Bogo', 'Borbon', 'Carcar', 'Catmon', 'Compostela', 'Consolacion', 'Cordoba', 'Daanbantayan', 'Dalaguete', 'Danao', 'Dumanjug', 'Ginatilan', 'Liloan', 'Madridejos', 'Malabuyoc', 'Medellin', 'Minglanilla', 'Moalboal', 'Naga', 'Oslob', 'Pilar', 'Pinamungajan', 'San Fernando', 'San Francisco', 'San Remigio', 'Santa Fe', 'Santander', 'Sibonga', 'Sogod', 'Tabogon', 'Tabuelan', 'Toledo City', 'Tuburan'],
-                'Negros Oriental': ['Ayungon', 'Bacong', 'Basay', 'Bayawan', 'Bindoy', 'Canlaon', 'Dumaguete', 'Guihulngan', 'Jimalalud', 'La Libertad', 'Mabinay', 'Manjuyod', 'Pamplona', 'San Jose', 'Tanjay', 'Tayasan', 'Valencia', 'Vallehermoso'],
-                'Siquijor': ['Enrique Villanueva', 'Larena', 'Lazi', 'Maria', 'San Juan', 'Siquijor']
-            }
-        };
-        const clubs = ['Masskara Eagles Club', 'Masskara Central Eagles Club', 'Murcia Tinabuay Eagles Club', 'Masskara Yuhom Eagles Club', 'Talisay Halangdon Eagles Club', 'Isla del Fuego Eagles Club', 'Masskara Buklod Eagles Club'];
-        const sexes = ['Male', 'Female', 'Other'];
-        const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-        const industries = ['Electronics & Semiconductors', 'Food & Beverage Processing', 'Chemicals & Petrochemicals', 'Automotive & Transport', 'Aerospace', 'IT-BPM (Business Process Management)', 'Tourism & Hospitality', 'Construction', 'Real Estate', 'E-Commerce', 'Agriculture', 'General Manufacturing'];
+    // ---------- DATA LISTS ----------
+    const clubs = ['Masskara Eagles Club','Masskara Central Eagles Club','Murcia Tinabuay Eagles Club','Masskara Yuhom Eagles Club','Talisay Halangdon Eagles Club','Isla del Fuego Eagles Club','Masskara Buklod Eagles Club'];
+    const sexes = ['Male','Female','Other'];
+    const bloodTypes = ['A+','A-','B+','B-','AB+','AB-','O+','O-'];
+    const industries = ['Electronics & Semiconductors','Food & Beverage','Chemicals','Automotive','Aerospace','IT-BPM','Tourism','Construction','Real Estate','E-Commerce','Agriculture','Manufacturing'];
 
-        // App logic starts here
-        let currentUser = null;
-        let localData = JSON.parse(localStorage.getItem('profileData') || '{}');
+    const regions = ['Western Visayas','Central Visayas'];
+    const provinces = {
+      'Western Visayas': {
+        'Aklan': ['Altavas','Balete','Banga','Buruanga','Ibajay','Kalibo','Lezo','Madalag','Makato','Malay','Malinao','Nabas','New Washington','Numancia','Tangalan'],
+        'Antique': ['Anini-y','Barbaza','Belison','Bugtong Bato','Caluya','Culasi','Hamtic','Laua-an','Libertad','Pandan','Patnongon','San Remigio','Sebaste','Sibalom','Tobias Fornier','Valderrama'],
+        'Capiz': ['City of Roxas','Cuartero','Dao','Dumarao','Dumalag','Ivisan','Jamindan','Ma-ayon','Mambusao','Panay','Pilar','Pontevedra','Pres. Roxas','Sapian','Sigma'],
+        'Guimaras': ['Buenavista','Jordan','Nueva Valencia','San Lorenzo','Sibunag'],
+        'Iloilo': ['Ajuy','Alimodian','Anilao','Badiangan','Balasan','Banate','Barotac Nuevo','Barotac Viejo','Batad','Bingawan','Cabatuan','Calinog','Carles','Concepcion','Dingle','Duenas','Dumangas','Estancia','Guimbal','Igbaras','Janiuay','Lambunao','Leganes','Lemery','Leon','Maasin','Miagao','Mina','New Lucena','Oton','Pavia','Pototan','San Dionisio','San Enrique','San Joaquin','San Miguel','San Rafael','Santa Barbara','Sara','Tigbauan','Tubungan','Zarraga'],
+        'Negros Occidental': ['Bacolod','Bago','Cadiz','Escalante','Himamaylan','Kabankalan','La Carlota','Sagay','San Carlos','Silay','Sipalay','Talisay','Victorias','Binalbagan','Calatrava','Candoni','Cauayan','Don Salvador Benedicto','Enrique B. Magalona','Hinigaran','Hinoba-an','Ilog','Isabela','La Castellana','Manapla','Moises Padilla','Murcia','Pontevedra','Pulupandan','San Enrique','Toboso','Valladolid']
+      },
+      'Central Visayas':{
+        'Bohol':['Alicia','Anda','Antequera','Baclayon','Balilihan','Batuan','Bilar','Buenavista','Calape','Candijay','Carmen','Catigbian','Clarin','Corella','Cortes','Dauis','Dimiao','Duero','Garcia Hernandez','Guindulman','Inabanga','Jagna','Lila','Loay','Loboc','Loon','Mabini','Maribojoc','Panglao','Pilar','President Carlos P. Garcia','Sagbayan','San Isidro','Sebmo','Sierra Bullones','Sikatuna','Tagbilaran City','Talibon','Trinidad','Ubay','Valencia'],
+        'Cebu':['Alcantara','Alcoy','Alegria','Amlan','Badian','Balamban','Bantayan','Barili','Bogo','Borbon','Carcar','Catmon','Compostela','Consolacion','Cordoba','Daanbantayan','Dalaguete','Danao','Dumanjug','Ginatilan','Liloan','Madridejos','Malabuyoc','Medellin','Minglanilla','Moalboal','Naga','Oslob','Pilar','Pinamungajan','San Fernando','San Francisco','San Remigio','Santa Fe','Santander','Sibonga','Sogod','Tabogon','Tabuelan','Toledo City','Tuburan'],
+        'Negros Oriental':['Ayungon','Bacong','Basay','Bayawan','Bindoy','Canlaon','Dumaguete','Guihulngan','Jimalalud','La Libertad','Mabinay','Manjuyod','Pamplona','San Jose','Tanjay','Tayasan','Valencia','Vallehermoso'],
+        'Siquijor':['Enrique Villanueva','Larena','Lazi','Maria','San Juan','Siquijor']
+      }
+    };
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('loginPage').style.display = 'none';
-                document.getElementById('profilePage').style.display = 'block';
-                loadLocalData();
-            } else {
-                document.getElementById('loginPage').style.display = 'block';
-                document.getElementById('profilePage').style.display = 'none';
-            }
-        });
+    // ---------- AUTH ----------
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('profilePage').style.display = 'block';
+        loadLocalData();
+        document.getElementById('mobile').value = user.email.split('@')[0]; // optional
+      } else {
+        document.getElementById('loginPage').style.display = 'block';
+        document.getElementById('profilePage').style.display = 'none';
+      }
+    });
 
-        function populateDropdown(parent, options) {
-            const select = document.createElement('select');
-            options.forEach(opt => {
-                const option = document.createElement('option');
-                option.value = opt;
-                option.textContent = opt;
-                select.appendChild(option);
-            });
-            parent.appendChild(select);
-            return select;
-        }
+    window.register = async () => {
+      const email = document.getElementById('email').value.trim();
+      const pwd   = document.getElementById('password').value;
+      if (!email || !pwd) return alert('Fill email and password');
+      try {
+        await createUserWithEmailAndPassword(auth, email, pwd);
+        alert('Registered! You are now logged in.');
+      } catch (e) { alert('Register error: ' + e.message); }
+    };
 
-        function chainDropdowns(regionSelect, provinceSelect, citySelect) {
-            regionSelect.onchange = () => {
-                const region = regionSelect.value;
-                provinceSelect.innerHTML = '<option>Select Province</option>';
-                citySelect.innerHTML = '<option>Select City/Municipality</option>';
-                if (region && provinces[region]) {
-                    Object.keys(provinces[region]).forEach(prov => {
-                        const option = document.createElement('option');
-                        option.value = prov;
-                        option.textContent = prov;
-                        provinceSelect.appendChild(option);
-                    });
-                }
-            };
-            provinceSelect.onchange = () => {
-                const region = regionSelect.value;
-                const prov = provinceSelect.value;
-                citySelect.innerHTML = '<option>Select City/Municipality</option>';
-                if (region && prov && provinces[region][prov]) {
-                    provinces[region][prov].forEach(city => {
-                        const option = document.createElement('option');
-                        option.value = city;
-                        option.textContent = city;
-                        citySelect.appendChild(option);
-                    });
-                }
-            };
-        }
+    window.login = async () => {
+      const email = document.getElementById('email').value.trim();
+      const pwd   = document.getElementById('password').value;
+      if (!email || !pwd) return alert('Fill email and password');
+      try {
+        await signInWithEmailAndPassword(auth, email, pwd);
+      } catch (e) { alert('Login error: ' + e.message); }
+    };
 
-        function loadLocalData() {
-            // Load saved data into form
-            const form = document.getElementById('profileForm');
-            for (let [key, value] of Object.entries(localData)) {
-                const input = form.querySelector(`[name="${key}"]`);
-                if (input) input.value = value;
-            }
-            // For photo, show preview if URL saved
-            if (localData.photoUrl) {
-                document.getElementById('photoPreview').src = localData.photoUrl;
-            }
-        }
+    // ---------- LOCAL SAVE ----------
+    const localKey = 'eaglesProfile';
+    const saveLocal = () => {
+      const data = Object.fromEntries(new FormData(document.getElementById('profileForm')));
+      localStorage.setItem(localKey, JSON.stringify(data));
+      alert('Saved locally – you can continue later.');
+    };
+    const loadLocalData = () => {
+      const saved = JSON.parse(localStorage.getItem(localKey) || '{}');
+      const form = document.getElementById('profileForm');
+      Object.entries(saved).forEach(([k,v]) => {
+        const el = form.elements[k];
+        if (el) el.value = v;
+      });
+      if (saved.photoUrl) document.getElementById('photoPreview').src = saved.photoUrl;
+    };
 
-        function saveLocal() {
-            const form = document.getElementById('profileForm');
-            const formData = new FormData(form);
-            localData = Object.fromEntries(formData);
-            localStorage.setItem('profileData', JSON.stringify(localData));
-            alert('Saved locally! You can continue later.');
-        }
+    // ---------- SUBMIT ----------
+    const requiredFields = ['clubMembership','lastName','firstName','middleName','dob','sex','bloodType',
+      'birthRegion','birthProvince','birthCity','homeRegion','homeProvince','homeCity','barangay','street',
+      'mobile','emailContact','fbName','employerName','employerAddress','position','industry',
+      'sponsorName','yearJoined'];
 
-        async function submitToDB() {
-            const form = document.getElementById('profileForm');
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData);
-            const certify = document.getElementById('certify').checked;
+    window.submitToDB = async () => {
+      if (!document.getElementById('certify').checked) return alert('You must certify the data.');
+      const form = document.getElementById('profileForm');
+      const data = Object.fromEntries(new FormData(form));
 
-            // Check required fields (all except dependents)
-            const required = ['clubMembership', 'lastName', 'firstName', 'middleName', 'dob', 'sex', 'bloodType', 'birthRegion', 'birthProvince', 'birthCity', 'homeRegion', 'homeProvince', 'homeCity', 'barangay', 'street', 'email', 'fbName', 'employerName', 'employerAddress', 'position', 'industry', 'sponsorName', 'yearJoined', 'photoFile'];
-            let missing = [];
-            required.forEach(field => {
-                if (!data[field] && field !== 'photoFile') missing.push(field);
-            });
-            if (missing.length > 0 || !certify) {
-                alert(`Please fill all required fields and certify. Missing: ${missing.join(', ')}`);
-                return;
-            }
+      // ---- check required ----
+      const missing = requiredFields.filter(f => !data[f]);
+      if (missing.length) return alert('Missing: ' + missing.join(', '));
 
-            // Upload photo if new
-            let photoUrl = localData.photoUrl || '';
-            if (data.photoFile && data.photoFile.size > 0) {
-                const photoRef = ref(storage, `photos/${currentUser.uid}`);
-                await uploadBytes(photoRef, data.photoFile);
-                photoUrl = await getDownloadURL(photoRef);
-            }
+      // ---- photo upload ----
+      let photoUrl = localStorage.getItem('photoUrl') || '';
+      const photoFile = document.getElementById('photoFile').files[0];
+      if (photoFile) {
+        const refPath = `photos/${auth.currentUser.uid}`;
+        const storRef = ref(storage, refPath);
+        await uploadBytes(storRef, photoFile);
+        photoUrl = await getDownloadURL(storRef);
+      }
 
-            // Save to DB (exclude dependents if empty)
-            const memberData = { ...data, uid: currentUser.uid, photoUrl, timestamp: new Date() };
-            if (!memberData.spouse && !memberData.child1 && !memberData.child2 && !memberData.child3) {
-                delete memberData.spouse; delete memberData.spouseDob; delete memberData.child1; delete memberData.child1Dob;
-                // ... similarly for child2/3
-            }
-            await addDoc(collection(db, 'members'), memberData);
-            localStorage.removeItem('profileData'); // Clear local after submit
-            alert('Submitted successfully! Thank you.');
-        }
+      // ---- save to Firestore ----
+      const member = { ...data, uid: auth.currentUser.uid, photoUrl, submittedAt: new Date() };
+      await addDoc(collection(db, 'members'), member);
+      localStorage.removeItem(localKey);
+      localStorage.removeItem('photoUrl');
+      alert('Submitted! Thank you.');
+    };
 
-        async function searchDB() {
-            const criteria = {
-                club: document.getElementById('searchClub').value,
-                lastName: document.getElementById('searchLastName').value,
-                // Add more as needed
-            };
-            let q = query(collection(db, 'members'));
-            if (criteria.club) q = query(q, where('clubMembership', '==', criteria.club));
-            if (criteria.lastName) q = query(q, where('lastName', '==', criteria.lastName));
-            const snapshot = await getDocs(q);
-            let results = '<table class="table"><tr><th>Name</th><th>Club</th><th>Province</th></tr>';
-            snapshot.forEach(doc => {
-                const d = doc.data();
-                results += `<tr><td>${d.firstName} ${d.lastName}</td><td>${d.clubMembership}</td><td>${d.homeProvince}</td></tr>`;
-            });
-            results += '</table>';
-            document.getElementById('searchResults').innerHTML = results || '<p>No results found.</p>';
-        }
+    // ---------- SEARCH ----------
+    window.searchDB = async () => {
+      const club = document.getElementById('searchClub').value;
+      const last = document.getElementById('searchLastName').value.trim();
+      let q = collection(db, 'members');
+      if (club) q = query(q, where('clubMembership','==',club));
+      if (last) q = query(q, where('lastName','==',last));
+      const snap = await getDocs(q);
+      const tbl = document.getElementById('searchResults');
+      if (snap.empty) { tbl.innerHTML = '<p>No results.</p>'; return; }
+      let html = '<table class="table table-sm"><thead><tr><th>Name</th><th>Club</th><th>City</th></tr></thead><tbody>';
+      snap.forEach(d => {
+        const r = d.data();
+        html += `<tr><td>${r.firstName} ${r.lastName}</td><td>${r.clubMembership}</td><td>${r.homeCity}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      tbl.innerHTML = html;
+    };
 
-        // Login/Register functions
-        async function register() {
-            const username = document.getElementById('username').value; // Treated as mobile
-            const password = document.getElementById('password').value;
-            const email = `${username}@eagles.local`; // Fake email for auth, real mobile in DB
-            try {
-                await createUserWithEmailAndPassword(auth, email, password);
-                alert('Registered! Logging in...');
-            } catch (e) { alert('Error: ' + e.message); }
-        }
+    // ---------- BUILD FORM ----------
+    window.onload = () => {
+      const f = document.getElementById('profileForm');
 
-        async function login() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const email = `${username}@eagles.local`;
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (e) { alert('Login failed: ' + e.message); }
-        }
+      // helper
+      const div = (label, name, type='text', extra='') => {
+        const d = document.createElement('div'); d.className='col-md-6';
+        d.innerHTML = `<label class="form-label">${label}</label><input type="${type}" class="form-control" name="${name}" ${extra}>`;
+        return d;
+      };
+      const sel = (label, name, opts) => {
+        const d = document.createElement('div'); d.className='col-md-6';
+        let ops = '<option value="">--</option>';
+        opts.forEach(o=>ops+=`<option>${o}</option>`);
+        d.innerHTML = `<label class="form-label">${label}</label><select class="form-select" name="${name}">${ops}</select>`;
+        return d;
+      };
 
-        function logout() {
-            signOut(auth);
-        }
+      // Club
+      f.appendChild(sel('Club Membership','clubMembership',clubs));
 
-        // Photo handling
-        document.getElementById('takePhoto').onclick = () => {
-            navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-                const video = document.createElement('video');
-                video.srcObject = stream;
-                video.play();
-                // Simple capture - in real, add canvas to snap
-                alert('Camera opened! Take photo in browser (mobile works best). Upload the file next.');
-                stream.getTracks().forEach(track => track.stop());
-            });
-        };
+      // Personal
+      ['lastName','firstName','middleName'].forEach(n=>f.appendChild(div(n.charAt(0).toUpperCase()+n.slice(1),n)));
+      f.appendChild(div('Date of Birth','dob','date'));
+      f.appendChild(sel('Sex','sex',sexes));
+      f.appendChild(sel('Blood Type','bloodType',bloodTypes));
 
-        document.getElementById('uploadPhoto').onclick = () => {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = e => {
-                const file = e.target.files[0];
-                document.getElementById('photoFile').files = e.target.files;
-                const reader = new FileReader();
-                reader.onload = ev => document.getElementById('photoPreview').src = ev.target.result;
-                reader.readAsDataURL(file);
-            };
-            input.click();
-        };
+      // Birth place
+      const birth = document.createElement('div'); birth.className='row';
+      const bReg = sel('Birth Region','birthRegion',regions);
+      const bProv = document.createElement('div'); bProv.className='col-md-6';
+      bProv.innerHTML = '<label class="form-label">Birth Province</label><select class="form-select" name="birthProvince"><option>--</option></select>';
+      const bCity = document.createElement('div'); bCity.className='col-md-6';
+      bCity.innerHTML = '<label class="form-label">Birth City/Municipality</label><select class="form-select" name="birthCity"><option>--</option></select>';
+      birth.append(bReg, bProv, bCity);
+      f.appendChild(birth);
 
-        // Initialize form on load
-        window.onload = () => {
-            // Build form dynamically
-            const form = document.getElementById('profileForm');
-            // Club
-            const clubDiv = document.createElement('div');
-            clubDiv.className = 'mb-3';
-            clubDiv.innerHTML = '<label>Club Membership</label>';
-            populateDropdown(clubDiv, clubs);
-            form.appendChild(clubDiv);
+      // Home address
+      const home = document.createElement('div'); home.className='row';
+      const hReg = sel('Home Region','homeRegion',regions);
+      const hProv = document.createElement('div'); hProv.className='col-md-6';
+      hProv.innerHTML = '<label class="form-label">Home Province</label><select class="form-select" name="homeProvince"><option>--</option></select>';
+      const hCity = document.createElement('div'); hCity.className='col-md-6';
+      hCity.innerHTML = '<label class="form-label">Home City/Municipality</label><select class="form-select" name="homeCity"><option>--</option></select>';
+      home.append(hReg, hProv, hCity);
+      f.appendChild(home);
 
-            // Personal Data
-            ['lastName', 'firstName', 'middleName'].forEach(field => {
-                const div = document.createElement('div');
-                div.className = 'mb-3';
-                div.innerHTML = `<label>${field.replace(/([A-Z])/g, ' $1').toUpperCase()}</label><input type="text" class="form-control" name="${field}">`;
-                form.appendChild(div);
-            });
-            const dobDiv = document.createElement('div');
-            dobDiv.className = 'mb-3';
-            dobDiv.innerHTML = '<label>Date of Birth</label><input type="date" class="form-control" name="dob">';
-            form.appendChild(dobDiv);
-            const sexDiv = document.createElement('div');
-            sexDiv.className = 'mb-3';
-            sexDiv.innerHTML = '<label>Sex</label>';
-            populateDropdown(sexDiv, sexes);
-            form.appendChild(sexDiv);
-            const bloodDiv = document.createElement('div');
-            bloodDiv.className = 'mb-3';
-            bloodDiv.innerHTML = '<label>Blood Type</label>';
-            populateDropdown(bloodDiv, bloodTypes);
-            form.appendChild(bloodDiv);
+      f.appendChild(div('Barangay','barangay'));
+      f.appendChild(div('Street','street'));
 
-            // Place of Birth
-            const birthDiv = document.createElement('div');
-            birthDiv.className = 'row';
-            ['Region', 'Province', 'City/Municipality'].forEach((label, i) => {
-                const col = document.createElement('div');
-                col.className = 'col mb-3';
-                col.innerHTML = `<label>Birth ${label}</label>`;
-                const select = document.createElement('select');
-                select.className = 'form-control';
-                select.name = `birth${label.toLowerCase().replace(' ', '')}`;
-                col.appendChild(select);
-                birthDiv.appendChild(col);
-            });
-            const birthRegion = form.querySelector('[name="birthregion"]');
-            const birthProvince = form.querySelector('[name="birthprovince"]');
-            const birthCity = form.querySelector('[name="birthcity"]');
-            populateDropdown(birthRegion, regions);
-            chainDropdowns(birthRegion, birthProvince, birthCity);
-            form.appendChild(birthDiv);
+      // Contact
+      f.appendChild(div('Mobile No.','mobile','tel','required'));
+      f.appendChild(div('Email (contact)','emailContact','email'));
+      f.appendChild(div('FB/Messenger Name','fbName'));
 
-            // Home Address (similar to birth)
-            const homeDiv = document.createElement('div');
-            homeDiv.className = 'row';
-            ['Region', 'Province', 'City/Municipality'].forEach((label, i) => {
-                const col = document.createElement('div');
-                col.className = 'col mb-3';
-                col.innerHTML = `<label>Home ${label}</label>`;
-                const select = document.createElement('select');
-                select.className = 'form-control';
-                select.name = `home${label.toLowerCase().replace(' ', '')}`;
-                col.appendChild(select);
-                homeDiv.appendChild(col);
-            });
-            const homeRegion = form.querySelector('[name="homeregion"]');
-            const homeProvince = form.querySelector('[name="homeprovince"]');
-            const homeCity = form.querySelector('[name="homecity"]');
-            populateDropdown(homeRegion, regions);
-            chainDropdowns(homeRegion, homeProvince, homeCity);
-            form.appendChild(homeDiv);
+      // Employment
+      f.appendChild(div('Employer / Business','employerName'));
+      f.appendChild(div('Employer Address','employerAddress'));
+      f.appendChild(div('Position','position'));
+      f.appendChild(sel('Industry','industry',industries));
 
-            const addrDiv = document.createElement('div');
-            addrDiv.className = 'row';
-            ['barangay', 'street'].forEach(field => {
-                const col = document.createElement('div');
-                col.className = 'col mb-3';
-                col.innerHTML = `<label>${field.toUpperCase()}</label><input type="text" class="form-control" name="${field}">`;
-                addrDiv.appendChild(col);
-            });
-            form.appendChild(addrDiv);
+      // Dependents (optional)
+      const dep = document.createElement('div'); dep.className='row';
+      ['spouse','spouseDob','child1','child1Dob','child2','child2Dob','child3','child3Dob'].forEach((n,i)=>{
+        const label = i%2===0 ? n.replace(/([a-z])([A-Z])/g,'$1 $2') : n.replace('Dob','Birthday');
+        dep.appendChild(div(label,n, i%2===1?'date':'text'));
+      });
+      f.appendChild(dep);
 
-            // Contact
-            const mobileDiv = document.createElement('div');
-            mobileDiv.className = 'mb-3';
-            mobileDiv.innerHTML = `<label>Mobile No.</label><input type="text" class="form-control" name="mobile" value="${localStorage.getItem('mobile') || ''}" readonly>`;
-            form.appendChild(mobileDiv);
-            const contactDiv = document.createElement('div');
-            contactDiv.className = 'row';
-            ['email', 'fbName'].forEach(field => {
-                const col = document.createElement('div');
-                col.className = 'col mb-3';
-                col.innerHTML = `<label>${field.toUpperCase().replace('ad', ' Address')}</label><input type="text" class="form-control" name="${field}">`;
-                contactDiv.appendChild(col);
-            });
-            form.appendChild(contactDiv);
+      // Sponsor
+      f.appendChild(div('Sponsor Name','sponsorName'));
+      f.appendChild(div('Year Joined','yearJoined','number'));
 
-            // Employment
-            const empDiv = document.createElement('div');
-            empDiv.className = 'row';
-            ['employerName', 'employerAddress', 'position'].forEach(field => {
-                const col = document.createElement('div');
-                col.className = 'col mb-3';
-                col.innerHTML = `<label>${field.replace('employer', '').toUpperCase()}</label><input type="text" class="form-control" name="${field}">`;
-                empDiv.appendChild(col);
-            });
-            form.appendChild(empDiv);
-            const indDiv = document.createElement('div');
-            indDiv.className = 'mb-3';
-            indDiv.innerHTML = '<label>Industry Category</label>';
-            populateDropdown(indDiv, industries);
-            form.appendChild(indDiv);
+      // Photo
+      const photoDiv = document.createElement('div'); photoDiv.className='col-12';
+      photoDiv.innerHTML = `
+        <label class="form-label">Photo</label><br>
+        <button type="button" id="takePhoto" class="btn btn-sm btn-outline-secondary">Take Picture</button>
+        <button type="button" id="uploadPhoto" class="btn btn-sm btn-outline-secondary">Upload File</button>
+        <input type="file" id="photoFile" accept="image/*" style="display:none">
+        <img id="photoPreview" class="img-thumbnail mt-2" style="max-height:180px;display:none;">
+      `;
+      f.appendChild(photoDiv);
 
-            // Legal Dependents (optional)
-            const depDiv = document.createElement('div');
-            depDiv.className = 'row';
-            [['spouse', 'Spouse'], ['spouseDob', "Spouse's Birthday"], ['child1', 'Child 1'], ['child1Dob', 'Child 1 Birthday'], ['child2', 'Child 2'], ['child2Dob', 'Child 2 Birthday'], ['child3', 'Child 3'], ['child3Dob', 'Child 3 Birthday']].forEach(([field, label]) => {
-                const col = document.createElement('div');
-                col.className = 'col mb-3';
-                const type = field.includes('Dob') ? 'date' : 'text';
-                col.innerHTML = `<label>${label}</label><input type="${type}" class="form-control" name="${field}">`;
-                depDiv.appendChild(col);
-            });
-            form.appendChild(depDiv);
-
-            // Sponsored By
-            const sponDiv = document.createElement('div');
-            sponDiv.className = 'row';
-            ['sponsorName', 'yearJoined'].forEach(field => {
-                const col = document.createElement('div');
-                col.className = 'col mb-3';
-                const type = field === 'yearJoined' ? 'number' : 'text';
-                col.innerHTML = `<label>${field.toUpperCase()}</label><input type="${type}" class="form-control" name="${field}">`;
-                sponDiv.appendChild(col);
-            });
-            form.appendChild(sponDiv);
-
-            // Photo
-            const photoDiv = document.createElement('div');
-            photoDiv.className = 'mb-3';
-            photoDiv.innerHTML = `
-                <label>Photo</label>
-                <button type="button" id="takePhoto" class="btn btn-secondary me-2">Take Picture</button>
-                <button type="button" id="uploadPhoto" class="btn btn-secondary">Upload from File</button>
-                <input type="file" id="photoFile" name="photoFile" style="display:none">
-                <img id="photoPreview" style="max-width:200px; margin-top:10px;" alt="Preview">
-            `;
-            form.appendChild(photoDiv);
-
-            // Save buttons
-            const saveDiv = document.createElement('div');
-            saveDiv.innerHTML = `
-                <button type="button" onclick="saveLocal()" class="btn btn-warning me-2">Save and Continue Later</button>
-                <div class="form-check mb-2">
-                    <input type="checkbox" id="certify" class="form-check-input">
-                    <label class="form-check-label">I certify that all information is true and accurate</label>
-                </div>
-                <button type="button" onclick="submitToDB()" class="btn btn-success">Save and Submit</button>
-            `;
-            form.appendChild(saveDiv);
-
-            // Search Tab
-            const searchDiv = document.createElement('div');
-            searchDiv.id = 'searchTab';
-            searchDiv.className = 'mt-5 p-3 border-top';
-            searchDiv.innerHTML = `
-                <h5>Search Members</h5>
-                <div class="row">
-                    <div class="col"><select id="searchClub" class="form-control"><option>Select Club</option>${clubs.map(c => `<option>${c}</option>`).join('')}</select></div>
-                    <div class="col"><input id="searchLastName" placeholder="Last Name" class="form-control"></div>
-                    <div class="col"><button onclick="searchDB()" class="btn btn-primary">Search</button></div>
-                </div>
-                <div id="searchResults"></div>
-            `;
-            form.parentNode.appendChild(searchDiv);
-
-            // Logout
-            const logoutDiv = document.createElement('div');
-            logoutDiv.className = 'mt-3';
-            logoutDiv.innerHTML = '<button onclick="logout()" class="btn btn-outline-danger">Logout</button>';
-            form.parentNode.appendChild(logoutDiv);
-        };
-    </script>
-</head>
-<body>
-    <div id="loginPage" class="container mt-5">
-        <h1 class="text-center">Negros Island Eagles Region Members' Portal</h1>
-        <div class="row justify-content-center">
-            <div class="col-md-4">
-                <div class="mb-3"><input id="username" type="text" class="form-control" placeholder="Username (Mobile No.)" required></div>
-                <div class="mb-3"><input id="password" type="password" class="form-control" placeholder="Password" required></div>
-                <div class="d-grid gap-2">
-                    <button onclick="register()" class="btn btn-primary">Register</button>
-                    <button onclick="login()" class="btn btn-success">Log In</button>
-                </div>
-            </div>
+      // Buttons
+      const btns = document.createElement('div'); btns.className='col-12 d-flex flex-wrap gap-2';
+      btns.innerHTML = `
+        <button type="button" onclick="saveLocal()" class="btn btn-warning">Save & Continue Later</button>
+        <div class="form-check mt-2">
+          <input type="checkbox" id="certify" class="form-check-input">
+          <label class="form-check-label">I certify all information is true</label>
         </div>
-    </div>
-    <div id="profilePage" class="container mt-5" style="display:none;">
-        <h2>Member Profile</h2>
-        <form id="profileForm"></form>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <button type="button" onclick="submitToDB()" class="btn btn-success">Save & Submit</button>
+        <button type="button" onclick="signOut(auth)" class="btn btn-outline-danger ms-auto">Logout</button>
+      `;
+      f.appendChild(btns);
+
+      // ---------- CHAIN DROPDOWNS ----------
+      const chain = (regSel, provSel, citySel) => {
+        regSel.onchange = () => {
+          const r = regSel.value;
+          provSel.innerHTML = '<option>--</option>';
+          citySel.innerHTML = '<option>--</option>';
+          if (!r) return;
+          Object.keys(provinces[r]).forEach(p=>{
+            const o = document.createElement('option'); o.value=p; o.text=p;
+            provSel.appendChild(o);
+          });
+        };
+        provSel.onchange = () => {
+          const r = regSel.value, p = provSel.value;
+          citySel.innerHTML = '<option>--</option>';
+          if (!p) return;
+          provinces[r][p].forEach(c=>{
+            const o = document.createElement('option'); o.value=c; o.text=c;
+            citySel.appendChild(o);
+          });
+        };
+      };
+      chain(f.birthRegion, f.birthProvince, f.birthCity);
+      chain(f.homeRegion, f.homeProvince, f.homeCity);
+
+      // ---------- PHOTO ----------
+      document.getElementById('takePhoto').onclick = () => {
+        const inp = document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.capture='environment';
+        inp.onchange = e => handlePhoto(e.target.files[0]);
+        inp.click();
+      };
+      document.getElementById('uploadPhoto').onclick = () => {
+        document.getElementById('photoFile').click();
+      };
+      document.getElementById('photoFile').onchange = e => handlePhoto(e.target.files[0]);
+      const handlePhoto = file => {
+        if (!file) return;
+        const prev = document.getElementById('photoPreview');
+        prev.src = URL.createObjectURL(file); prev.style.display='block';
+        localStorage.setItem('photoUrl', prev.src); // temp preview
+      };
+
+      // ---------- SEARCH TAB ----------
+      const searchDiv = document.createElement('div'); searchDiv.className='mt-5 p-3 border-top';
+      searchDiv.innerHTML = `
+        <h5>Search Members</h5>
+        <div class="row g-2">
+          <div class="col"><select id="searchClub" class="form-select"><option value="">All Clubs</option>${clubs.map(c=>`<option>${c}</option>`).join('')}</select></div>
+          <div class="col"><input id="searchLastName" placeholder="Last Name" class="form-control"></div>
+          <div class="col-auto"><button onclick="searchDB()" class="btn btn-primary">Search</button></div>
+        </div>
+        <div id="searchResults" class="mt-3"></div>
+      `;
+      document.getElementById('profilePage').appendChild(searchDiv);
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
