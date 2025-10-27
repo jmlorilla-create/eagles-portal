@@ -12,17 +12,18 @@
   </style>
 </head>
 <body>
+
   <!-- ========= LOGIN PAGE ========= -->
   <div id="loginPage" class="container mt-5">
     <h1 class="text-center mb-4">Negros Island Eagles Region<br>Members' Portal</h1>
     <div class="card p-4 shadow">
       <div class="mb-3">
-        <label class="form-label">Email (used for login)</label>
-        <input id="email" type="email" class="form-control" placeholder="you@gmail.com" required>
+        <label class="form-label">Username (any text, e.g. mobile no.)</label>
+        <input id="username" type="text" class="form-control" placeholder="09171234567" required>
       </div>
       <div class="mb-3">
         <label class="form-label">Password</label>
-        <input id="password" type="password" class="form-control" placeholder="min 6 chars" required>
+        <input id="password" type="password" class="form-control" placeholder="min 6 characters" required>
       </div>
       <div class="d-grid gap-2">
         <button onclick="register()" class="btn btn-primary">Register</button>
@@ -52,7 +53,7 @@
 
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-    import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+    import { getFirestore, collection, addDoc, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
     import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js';
 
     const app = initializeApp(firebaseConfig);
@@ -60,7 +61,7 @@
     const db = getFirestore(app);
     const storage = getStorage(app);
 
-    // ---------- DATA LISTS ----------
+    // ---------- DATA LISTS (same as before) ----------
     const clubs = ['Masskara Eagles Club','Masskara Central Eagles Club','Murcia Tinabuay Eagles Club','Masskara Yuhom Eagles Club','Talisay Halangdon Eagles Club','Isla del Fuego Eagles Club','Masskara Buklod Eagles Club'];
     const sexes = ['Male','Female','Other'];
     const bloodTypes = ['A+','A-','B+','B-','AB+','AB-','O+','O-'];
@@ -84,35 +85,45 @@
       }
     };
 
-    // ---------- AUTH ----------
+    // ---------- AUTH LISTENER (FIXED) ----------
     onAuthStateChanged(auth, user => {
+      const loginDiv = document.getElementById('loginPage');
+      const profileDiv = document.getElementById('profilePage');
+
       if (user) {
-        document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('profilePage').style.display = 'block';
+        // USER IS LOGGED IN → show profile
+        loginDiv.style.display = 'none';
+        profileDiv.style.display = 'block';
         loadLocalData();
-        document.getElementById('mobile').value = user.email.split('@')[0]; // optional
+        // Show username in mobile field (read-only)
+        document.getElementById('mobile').value = user.email.split('@')[0];
       } else {
-        document.getElementById('loginPage').style.display = 'block';
-        document.getElementById('profilePage').style.display = 'none';
+        // NO USER → force login page
+        loginDiv.style.display = 'block';
+        profileDiv.style.display = 'none';
       }
     });
 
+    // ---------- REGISTER ----------
     window.register = async () => {
-      const email = document.getElementById('email').value.trim();
-      const pwd   = document.getElementById('password').value;
-      if (!email || !pwd) return alert('Fill email and password');
+      const username = document.getElementById('username').value.trim();
+      const pwd = document.getElementById('password').value;
+      if (!username || !pwd) return alert('Enter username and password');
+      const fakeEmail = `${username}@eagles.local`; // hidden from user
       try {
-        await createUserWithEmailAndPassword(auth, email, pwd);
+        await createUserWithEmailAndPassword(auth, fakeEmail, pwd);
         alert('Registered! You are now logged in.');
       } catch (e) { alert('Register error: ' + e.message); }
     };
 
+    // ---------- LOGIN ----------
     window.login = async () => {
-      const email = document.getElementById('email').value.trim();
-      const pwd   = document.getElementById('password').value;
-      if (!email || !pwd) return alert('Fill email and password');
+      const username = document.getElementById('username').value.trim();
+      const pwd = document.getElementById('password').value;
+      if (!username || !pwd) return alert('Enter username and password');
+      const fakeEmail = `${username}@eagles.local`;
       try {
-        await signInWithEmailAndPassword(auth, email, pwd);
+        await signInWithEmailAndPassword(auth, fakeEmail, pwd);
       } catch (e) { alert('Login error: ' + e.message); }
     };
 
@@ -121,7 +132,7 @@
     const saveLocal = () => {
       const data = Object.fromEntries(new FormData(document.getElementById('profileForm')));
       localStorage.setItem(localKey, JSON.stringify(data));
-      alert('Saved locally – you can continue later.');
+      alert('Saved locally – continue anytime.');
     };
     const loadLocalData = () => {
       const saved = JSON.parse(localStorage.getItem(localKey) || '{}');
@@ -144,26 +155,22 @@
       const form = document.getElementById('profileForm');
       const data = Object.fromEntries(new FormData(form));
 
-      // ---- check required ----
       const missing = requiredFields.filter(f => !data[f]);
       if (missing.length) return alert('Missing: ' + missing.join(', '));
 
-      // ---- photo upload ----
       let photoUrl = localStorage.getItem('photoUrl') || '';
       const photoFile = document.getElementById('photoFile').files[0];
       if (photoFile) {
-        const refPath = `photos/${auth.currentUser.uid}`;
-        const storRef = ref(storage, refPath);
+        const storRef = ref(storage, `photos/${auth.currentUser.uid}`);
         await uploadBytes(storRef, photoFile);
         photoUrl = await getDownloadURL(storRef);
       }
 
-      // ---- save to Firestore ----
       const member = { ...data, uid: auth.currentUser.uid, photoUrl, submittedAt: new Date() };
       await addDoc(collection(db, 'members'), member);
       localStorage.removeItem(localKey);
       localStorage.removeItem('photoUrl');
-      alert('Submitted! Thank you.');
+      alert('Submitted successfully!');
     };
 
     // ---------- SEARCH ----------
@@ -189,7 +196,6 @@
     window.onload = () => {
       const f = document.getElementById('profileForm');
 
-      // helper
       const div = (label, name, type='text', extra='') => {
         const d = document.createElement('div'); d.className='col-md-6';
         d.innerHTML = `<label class="form-label">${label}</label><input type="${type}" class="form-control" name="${name}" ${extra}>`;
@@ -236,7 +242,7 @@
       f.appendChild(div('Street','street'));
 
       // Contact
-      f.appendChild(div('Mobile No.','mobile','tel','required'));
+      f.appendChild(div('Mobile No.','mobile','tel','readonly')); // filled from username
       f.appendChild(div('Email (contact)','emailContact','email'));
       f.appendChild(div('FB/Messenger Name','fbName'));
 
@@ -246,7 +252,7 @@
       f.appendChild(div('Position','position'));
       f.appendChild(sel('Industry','industry',industries));
 
-      // Dependents (optional)
+      // Dependents
       const dep = document.createElement('div'); dep.className='row';
       ['spouse','spouseDob','child1','child1Dob','child2','child2Dob','child3','child3Dob'].forEach((n,i)=>{
         const label = i%2===0 ? n.replace(/([a-z])([A-Z])/g,'$1 $2') : n.replace('Dob','Birthday');
@@ -278,11 +284,11 @@
           <label class="form-check-label">I certify all information is true</label>
         </div>
         <button type="button" onclick="submitToDB()" class="btn btn-success">Save & Submit</button>
-        <button type="button" onclick="signOut(auth)" class="btn btn-outline-danger ms-auto">Logout</button>
+        <button type="button" onclick="signOut(auth).then(()=>location.reload())" class="btn btn-outline-danger ms-auto">Logout</button>
       `;
       f.appendChild(btns);
 
-      // ---------- CHAIN DROPDOWNS ----------
+      // Chain dropdowns
       const chain = (regSel, provSel, citySel) => {
         regSel.onchange = () => {
           const r = regSel.value;
@@ -307,24 +313,22 @@
       chain(f.birthRegion, f.birthProvince, f.birthCity);
       chain(f.homeRegion, f.homeProvince, f.homeCity);
 
-      // ---------- PHOTO ----------
+      // Photo handlers
       document.getElementById('takePhoto').onclick = () => {
         const inp = document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.capture='environment';
         inp.onchange = e => handlePhoto(e.target.files[0]);
         inp.click();
       };
-      document.getElementById('uploadPhoto').onclick = () => {
-        document.getElementById('photoFile').click();
-      };
+      document.getElementById('uploadPhoto').onclick = () => document.getElementById('photoFile').click();
       document.getElementById('photoFile').onchange = e => handlePhoto(e.target.files[0]);
       const handlePhoto = file => {
         if (!file) return;
         const prev = document.getElementById('photoPreview');
         prev.src = URL.createObjectURL(file); prev.style.display='block';
-        localStorage.setItem('photoUrl', prev.src); // temp preview
+        localStorage.setItem('photoUrl', prev.src);
       };
 
-      // ---------- SEARCH TAB ----------
+      // Search tab
       const searchDiv = document.createElement('div'); searchDiv.className='mt-5 p-3 border-top';
       searchDiv.innerHTML = `
         <h5>Search Members</h5>
