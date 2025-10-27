@@ -53,7 +53,7 @@
 
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-    import { getFirestore, collection, addDoc, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+    import { getFirestore, collection, addDoc, query, where, getDocs, getDoc, doc } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
     import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js';
 
     const app = initializeApp(firebaseConfig);
@@ -61,7 +61,7 @@
     const db = getFirestore(app);
     const storage = getStorage(app);
 
-    // ---------- DATA LISTS (same as before) ----------
+    // ---------- DATA LISTS ----------
     const clubs = ['Masskara Eagles Club','Masskara Central Eagles Club','Murcia Tinabuay Eagles Club','Masskara Yuhom Eagles Club','Talisay Halangdon Eagles Club','Isla del Fuego Eagles Club','Masskara Buklod Eagles Club'];
     const sexes = ['Male','Female','Other'];
     const bloodTypes = ['A+','A-','B+','B-','AB+','AB-','O+','O-'];
@@ -86,19 +86,29 @@
     };
 
     // ---------- AUTH LISTENER (FIXED) ----------
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, async (user) => {
       const loginDiv = document.getElementById('loginPage');
       const profileDiv = document.getElementById('profilePage');
 
       if (user) {
-        // USER IS LOGGED IN → show profile
+        // Check if user has a profile in Firestore
+        const q = query(collection(db, 'members'), where('uid', '==', user.uid));
+        const snap = await getDocs(q);
+        if (snap.empty) {
+          // No profile → force logout
+          await signOut(auth);
+          localStorage.clear();
+          loginDiv.style.display = 'block';
+          profileDiv.style.display = 'none';
+          return;
+        }
+        // Profile exists → show it
         loginDiv.style.display = 'none';
         profileDiv.style.display = 'block';
         loadLocalData();
-        // Show username in mobile field (read-only)
         document.getElementById('mobile').value = user.email.split('@')[0];
       } else {
-        // NO USER → force login page
+        // No user → show login
         loginDiv.style.display = 'block';
         profileDiv.style.display = 'none';
       }
@@ -109,7 +119,7 @@
       const username = document.getElementById('username').value.trim();
       const pwd = document.getElementById('password').value;
       if (!username || !pwd) return alert('Enter username and password');
-      const fakeEmail = `${username}@eagles.local`; // hidden from user
+      const fakeEmail = `${username}@eagles.local`;
       try {
         await createUserWithEmailAndPassword(auth, fakeEmail, pwd);
         alert('Registered! You are now logged in.');
@@ -127,13 +137,25 @@
       } catch (e) { alert('Login error: ' + e.message); }
     };
 
-    // ---------- LOCAL SAVE ----------
-    const localKey = 'eaglesProfile';
-    const saveLocal = () => {
-      const data = Object.fromEntries(new FormData(document.getElementById('profileForm')));
-      localStorage.setItem(localKey, JSON.stringify(data));
-      alert('Saved locally – continue anytime.');
+    // ---------- LOGOUT ----------
+    window.logout = async () => {
+      await signOut(auth);
+      localStorage.clear(); // Clear saved form
+      alert('Logged out. See you soon!');
     };
+
+    // ---------- LOCAL SAVE (IMPROVED) ----------
+    const localKey = 'eaglesProfile';
+    window.saveLocal = () => {
+      const form = document.getElementById('profileForm');
+      const data = Object.fromEntries(new FormData(form));
+      // Save photo preview URL
+      const photoUrl = document.getElementById('photoPreview').src;
+      if (photoUrl && photoUrl.startsWith('blob:')) data.photoUrl = photoUrl;
+      localStorage.setItem(localKey, JSON.stringify(data));
+      alert('Saved locally – you can continue anytime.');
+    };
+
     const loadLocalData = () => {
       const saved = JSON.parse(localStorage.getItem(localKey) || '{}');
       const form = document.getElementById('profileForm');
@@ -141,7 +163,11 @@
         const el = form.elements[k];
         if (el) el.value = v;
       });
-      if (saved.photoUrl) document.getElementById('photoPreview').src = saved.photoUrl;
+      if (saved.photoUrl) {
+        const prev = document.getElementById('photoPreview');
+        prev.src = saved.photoUrl;
+        prev.style.display = 'block';
+      }
     };
 
     // ---------- SUBMIT ----------
@@ -158,7 +184,7 @@
       const missing = requiredFields.filter(f => !data[f]);
       if (missing.length) return alert('Missing: ' + missing.join(', '));
 
-      let photoUrl = localStorage.getItem('photoUrl') || '';
+      let photoUrl = '';
       const photoFile = document.getElementById('photoFile').files[0];
       if (photoFile) {
         const storRef = ref(storage, `photos/${auth.currentUser.uid}`);
@@ -169,7 +195,6 @@
       const member = { ...data, uid: auth.currentUser.uid, photoUrl, submittedAt: new Date() };
       await addDoc(collection(db, 'members'), member);
       localStorage.removeItem(localKey);
-      localStorage.removeItem('photoUrl');
       alert('Submitted successfully!');
     };
 
@@ -242,7 +267,7 @@
       f.appendChild(div('Street','street'));
 
       // Contact
-      f.appendChild(div('Mobile No.','mobile','tel','readonly')); // filled from username
+      f.appendChild(div('Mobile No.','mobile','tel','readonly'));
       f.appendChild(div('Email (contact)','emailContact','email'));
       f.appendChild(div('FB/Messenger Name','fbName'));
 
@@ -284,7 +309,7 @@
           <label class="form-check-label">I certify all information is true</label>
         </div>
         <button type="button" onclick="submitToDB()" class="btn btn-success">Save & Submit</button>
-        <button type="button" onclick="signOut(auth).then(()=>location.reload())" class="btn btn-outline-danger ms-auto">Logout</button>
+        <button type="button" onclick="logout()" class="btn btn-outline-danger ms-auto">Logout</button>
       `;
       f.appendChild(btns);
 
@@ -325,7 +350,6 @@
         if (!file) return;
         const prev = document.getElementById('photoPreview');
         prev.src = URL.createObjectURL(file); prev.style.display='block';
-        localStorage.setItem('photoUrl', prev.src);
       };
 
       // Search tab
